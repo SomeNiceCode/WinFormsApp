@@ -21,18 +21,18 @@ namespace WinFormsApp
 
         private void EnterLogin_TextChanged(object sender, EventArgs e)
         {
-
+            // Проверка допустимых символов или длины логина
         }
 
         private void EnterPassword_TextChanged(object sender, EventArgs e)
         {
-
+            // Можно добавить проверку сложности пароля
         }
 
         private void Enter_Click(object sender, EventArgs e)
         {
-            string username = EnterLogin.Text; // Логин пользователя
-            string password = EnterPassword.Text; // Пароль пользователя
+            string username = EnterLogin.Text;
+            string password = EnterPassword.Text;
 
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
@@ -40,62 +40,34 @@ namespace WinFormsApp
                 return;
             }
 
-            // Проверяем логин и пароль
-            CheckCredentials(username, password);
+            using (var context = new ApplicationContext())
+            {
+                var user = context.Users.SingleOrDefault(u => u.Name == username);
+
+                if (user == null)
+                {
+                    MessageBox.Show("Логин не найден. Хотите зарегистрироваться?");
+                    return;
+                }
+
+                if (user.PasswordHash == password) // Сравнение пароля (можно добавить проверку хэша)
+                {
+                    MessageBox.Show("Успешный вход! Добро пожаловать.");
+                    // Логика после успешного входа, например, переход в главное окно программы
+                }
+                else
+                {
+                    MessageBox.Show("Неверный пароль. Попробуйте ещё раз.");
+                }
+            }
         }
 
         private void Registration_Click(object sender, EventArgs e)
         {
-            Registration registrationForm = new Registration();
+            var registrationForm = new Registration();
             registrationForm.ShowDialog();
         }
-
-        private void CheckCredentials(string username, string password)
-        {
-            try
-            {
-                using (var connection = new SqlConnection(CreateTable.connectionString))
-                {
-                    connection.Open();
-
-                    // Проверяем, существует ли пользователь с таким логином
-                    string queryCheckUser = "SELECT Password FROM Users WHERE Username = @Username";
-                    using (var command = new SqlCommand(queryCheckUser, connection))
-                    {
-                        command.Parameters.AddWithValue("@Username", username);
-
-                        var result = command.ExecuteScalar();
-
-                        if (result == null)
-                        {
-                            // Пользователь не найден
-                            var registerOption = MessageBox.Show("Логин не найден. Хотите зарегистрироваться?", "Регистрация", MessageBoxButtons.YesNo);
-                            if (registerOption == DialogResult.Yes)
-                            {
-                                Registration registrationForm = new Registration();
-                                registrationForm.ShowDialog();
-                            }
-                            return;
-                        }
-
-                        // Сравниваем введённый пароль с тем, что в базе
-                        string storedPassword = result.ToString();
-                        if (storedPassword == password)
-                        {
-                            MessageBox.Show("Успешный вход! Добро пожаловать.");
-                            // Здесь можно открыть основное окно программы
-                        }
-                        else
-                        {
-                            MessageBox.Show("Неверный пароль. Попробуйте ещё раз.");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Произошла ошибка при проверке данных: " + ex.Message);
-            }
-        }
     }
+
+
 }
